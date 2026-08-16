@@ -1,0 +1,30 @@
+{
+  "name": "Neko GitHub App",
+  "url": "https://github.com/NekoAiDev/neko-github-app",
+  "description": "多功能 GitHub 自动化：自动标签、自动回复、陈旧 Issue 关闭、Release 通知、PR 检查、Webhook 中转。基于 Cloudflare Worker 免费运行。",
+  "public": true,
+  "hook_attributes": {
+    "url": "https://app.nekoaidev.top/",
+    "active": true,
+    "content_type": "json"
+  },
+  "redirect_url": "https://app.nekoaidev.top/",
+  "callback_urls": [
+    "https://app.nekoaidev.top/"
+  ],
+  "default_permissions": {
+    "issues": "write",
+    "pull_requests": "write",
+    "contents": "read",
+    "metadata": "read",
+    "releases": "read"
+  },
+  "default_events": [
+    "issues",
+    "issue_comment",
+    "pull_request",
+    "pull_request_review",
+    "release",
+    "push"
+  ]
+}

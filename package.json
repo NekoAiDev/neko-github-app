@@ -1,0 +1,32 @@
+{
+  "name": "neko-github-app",
+  "version": "1.0.0",
+  "description": "Neko GitHub App —— 多功能 GitHub 自动化应用（自动标签 / 自动回复 / 陈旧关闭 / Release 通知 / PR 检查 / Webhook 中转），基于 Cloudflare Worker 免费运行",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "cf-typegen": "wrangler types"
+  },
+  "license": "MIT",
+  "author": "NekoAiDev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NekoAiDev/neko-github-app"
+  },
+  "dependencies": {
+    "@octokit/auth-app": "^7.0.0",
+    "@octokit/webhooks-methods": "^4.0.0",
+    "hono": "^4.6.0",
+    "js-yaml": "^4.1.0",
+    "octokit": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240909.0",
+    "@types/js-yaml": "^4.0.9",
+    "typescript": "^5.5.4",
+    "wrangler": "^3.78.0"
+  }
+}

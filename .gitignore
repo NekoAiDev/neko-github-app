@@ -1,0 +1,13 @@
+node_modules
+dist
+.wrangler
+.env
+*.log
+private-key.pem
+.DS_Store
+
+# 本地预览副本（node 生成的静态预览，非源码）
+preview-*.html
+
+# 任意 pem 私钥文件（含 neko-github-app.*.private-key.pem）
+*.pem

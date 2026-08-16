@@ -1,0 +1,28 @@
+name = "neko-github-app"
+account_id = "291be096c0dd976905b93dbf9c327f62"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# 非敏感配置：把这里替换成你在 GitHub 创建 App 后拿到的 App ID
+[vars]
+APP_ID = "4604563"
+
+# 敏感信息请用 secret 注入（不要写进本文件）：
+#   cat neko-github-app.2026-08-15.private-key.pem | wrangler secret put PRIVATE_KEY
+#   wrangler secret put WEBHOOK_SECRET
+# 注意：WEBHOOK_SECRET / PRIVATE_KEY 一律通过 `wrangler secret put` 注入，
+#       本文件绝不存放任何明文密钥（含注释中的明文）。
+
+# 定时任务：每天凌晨扫描陈旧 Issue 并打标签
+# 注意：当前 Cloudflare 免费账号 cron 额度已用满（5/5），先注释以免部署失败。
+#       stale 自动扫描功能暂未启用；如需启用请升级 Workers Paid 或释放其他 cron 名额，再取消注释。
+# [triggers]
+# crons = ["13 0 * * *"]
+
+# 绑定自定义域名：走 Cloudflare 普通 CDN 代理，国内可达（workers.dev 默认子域在国内常被墙）
+routes = [{ pattern = "app.nekoaidev.top", custom_domain = true }]
+
+# 打开 Worker 日志观测，方便排查
+[observability]
+enabled = true

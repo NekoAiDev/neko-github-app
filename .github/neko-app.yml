@@ -1,0 +1,43 @@
+# Neko GitHub App 仓库级配置示例
+# 把本文件放到仓库的 .github/neko-app.yml 即可覆盖默认行为。
+# 不写任何配置（或文件不存在）时，全部功能使用内置默认值且开启。
+
+enabled: true
+
+autoLabel:
+  enabled: true
+  # 不写 rules 则使用内置默认规则；写了则完全替换下面的匹配表
+  rules:
+    - label: "bug"
+      match: "bug|错误|崩溃|crash"
+      field: both
+    - label: "enhancement"
+      match: "feature|建议|功能|需求"
+      field: both
+
+autoReply:
+  enabled: true
+  template: |
+    感谢你的提交喵~ 我们已经收到，会尽快处理。如有进展会在这里更新，请留意通知。
+
+stale:
+  enabled: true
+  days: 30
+  label: stale
+  message: "此 Issue 已 30 天无活动，被标记为 stale（陈旧）。若有进展请评论，我们会移除标签；若长期无更新将关闭。"
+
+releaseNotify:
+  enabled: true
+  # 把 Release 推送到这些通道；通道需能接收 JSON POST
+  channels:
+    - name: "my-worker"
+      url: "https://your-notify-worker.example.com/webhook"
+
+prChecks:
+  enabled: true
+
+# 把所有 issues / pull_request 事件转发到另一个系统
+forward:
+  url: "https://another-system.example.com/github"
+  secret: "可选签名，用于接收方校验"
+  events: ["issues", "pull_request"]
