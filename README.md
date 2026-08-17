@@ -42,28 +42,7 @@ GitHub ──webhook(HTTPS)──▶ Cloudflare Worker (Hono)
 
 ## Quick Start
 
-### 1. Create the GitHub App
-- **Way A (recommended)**: use `manifest.json` in this repo as a template at `https://github.com/settings/apps/new`.
-- **Way B**: manually create at `GitHub → Settings → Developer settings → GitHub Apps → New GitHub App` (see `manifest.json` for permissions/events).
-
-Note the **App ID** and the generated **private key (PEM)**, and set a **Webhook secret**.
-
-### 2. Configure secrets
-```bash
-cd neko-github-app
-# Put App ID into [vars] APP_ID in wrangler.toml (or use a secret)
-wrangler secret put WEBHOOK_SECRET
-cat private-key.pem | wrangler secret put PRIVATE_KEY
-```
-
-### 3. Deploy
-```bash
-npm install
-wrangler deploy
-```
-After deploy you get a `*.workers.dev` address (or bind your own domain, e.g. `app.nekoaidev.top`). Set it as the GitHub App's **Webhook URL**.
-
-### 4. Install
+### 1. Install
 On the App settings page click **Install App** and choose the org/repo to install.
 
 ---
@@ -92,28 +71,6 @@ forward:
 ```
 
 With no config, all features use built-in defaults and are enabled.
-
----
-
-## Publish to GitHub Marketplace
-
-1. Set **Public = true** in App settings, and fill in name, description, and logo.
-2. Use a stable public **Webhook URL** (a custom domain is recommended).
-3. Go to `Developer settings → GitHub Apps → Your App → Marketplace` and submit, choosing the **Free** plan.
-
----
-
-## Local Dev
-
-GitHub cannot deliver webhooks to `localhost`, so use [smee.io](https://smee.io) as a tunnel during development:
-
-```bash
-npm install -g smee-client
-smee -u https://smee.io/your-channel -t http://localhost:8787/
-wrangler dev   # in another terminal
-```
-
-Then set the smee forwarding URL as the App's Webhook URL for local debugging.
 
 ---
 
