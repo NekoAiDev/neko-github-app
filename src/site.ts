@@ -60,29 +60,32 @@ pre code{background:none;padding:0;color:inherit;font-size:inherit}
   0%,100%{transform:translateY(0)}
   50%{transform:translateY(-6px)}
 }
-.animate-fadeUp{animation:fadeUp .6s ease-out forwards}
-.animate-fadeUp-d1{animation:fadeUp .6s ease-out .1s forwards}
-.animate-fadeUp-d2{animation:fadeUp .6s ease-out .2s forwards}
-.animate-fadeUp-d3{animation:fadeUp .6s ease-out .3s forwards}
+/* 不用 fill-mode —— 元素默认可见，动画只是入场装饰。
+   即使动画不触发/JS 报错，内容仍然正常显示。 */
+.animate-fadeUp{animation:fadeUp .6s ease-out}
+.animate-fadeUp-d1{animation:fadeUp .6s ease-out .1s}
+.animate-fadeUp-d2{animation:fadeUp .6s ease-out .2s}
+.animate-fadeUp-d3{animation:fadeUp .6s ease-out .3s}
 .animate-float{animation:float 3s ease-in-out infinite}
 
-/* ── 文字轮播 ── */
+/* ── 文字轮播（JS 控制显隐，CSS 只管过渡动画）── */
 .rotator,.card-rot{
   position:relative;display:inline-block;
   min-height:1.15em;vertical-align:baseline;
 }
+/* 默认全部隐藏，由 JS 在初始化时立即设置哪个显示 */
 .rotator span,.card-rot span{
-  position:absolute;left:0;top:0;width:100%;
-  display:block;white-space:nowrap;
-  opacity:0;transition:opacity .4s ease,transform .4s ease;
-  transform:translateY(8px);
-  pointer-events:none;
+  display:none;position:absolute;left:0;top:0;width:100%;
+  white-space:nowrap;opacity:0;transition:opacity .4s ease,transform .4s ease;
+  transform:translateY(8px);pointer-events:none;
 }
+/* 第一个子元素 relative 撑开容器宽度 */
 .rotator span:first-child,.card-rot span:first-child{
   position:relative;left:auto;top:auto;width:auto;
 }
+/* JS 添加 .active 时显示 */
 .rotator span.active,.card-rot span.active{
-  opacity:1!important;transform:translateY(0);pointer-events:auto;
+  display:block!important;opacity:1!important;transform:translateY(0)!important;pointer-events:auto!important;
 }
 
 /* ── 导航栏 ── */
@@ -107,6 +110,10 @@ pre code{background:none;padding:0;color:inherit;font-size:inherit}
   color:var(--text);transition:background .12s,border-color .12s;
 }
 .nav-btn:hover{background:var(--bg-hover)}
+.lang-switch{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:2px;flex-shrink:0}
+.lang-switch a{padding:6px 11px;font-size:.84rem;font-weight:600;color:var(--muted);transition:all .12s}
+.lang-switch a:hover{color:var(--text);background:var(--bg-hover)}
+.lang-switch a.active{color:#fff;background:var(--primary)}
 
 /* ── 按钮 ── */
 .btn{
@@ -183,9 +190,9 @@ pre code{background:none;padding:0;color:inherit;font-size:inherit}
 .sidebar-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted2);padding:0 12px 10px}
 .sidebar-link{
   display:block;padding:9px 14px;border-radius:8px;font-size:.9rem;color:var(--muted);
-  transition:all .15s;border-left:3px solid transparent;margin-left:-14px;padding-left:14px;
+  transition:all .15s;border-left:3px solid transparent;
 }
-.sidebar-link:hover{color:var(--text);background:var(--bg-sub);border-left-color:var(--primary);padding-left:12px}
+.sidebar-link:hover{color:var(--text);background:var(--bg-sub);border-left-color:var(--primary)}
 .sidebar-link.active{color:var(--primary);background:var(--primary-light);border-left-color:var(--primary);font-weight:600}
 
 /* 中间内容区 */
@@ -287,295 +294,159 @@ const ICONS = {
   download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
 };
 
-/* 主题切换脚本 */
-const THEME_JS = `(function(){
-  var b=document.getElementById('thBtn');
-  if(!b)return;
-  var order=['system','light','dark'];
-  var ic={system:'${ICONS.monitor}',light:'${ICONS.sun}',dark:'${ICONS.moon}'};
-  function set(t){
-    var d=t==='system'?(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):t;
-    document.documentElement.setAttribute('data-theme',d);
-    if(b&&b.querySelector('.ti')) b.querySelector('.ti').innerHTML=ic[t]||'';
-  }
-  var s=localStorage.getItem('neko-theme')||'system';set(s);
-  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',function(){if((localStorage.getItem('neko-theme')||'system')==='system') set('system');});
-  b.addEventListener('click',function(){var c=localStorage.getItem('neko-theme')||'system';var n=order[(order.indexOf(c)+1)%3];localStorage.setItem('neko-theme',n);set(n);});
-})();`;
-
-/* 安装链接自动生成脚本 —— 根据当前域名推断 App slug */
-const INSTALL_JS = `(function(){
-  var btns=document.querySelectorAll('[data-install]');
-  btns.forEach(function(el){
-    el.addEventListener('click',function(e){
-      e.preventDefault();
-      var slug='neko-github-app';
-      window.open('https://github.com/apps/'+slug+'/installations/new','_blank');
-    });
-  });
-})();
-/* ── 清除页面游离文字 </> ── */
-(function(){
-  try{
-    var body=document.body;
-    if(!body)return;
-    var nodes=[].slice.call(body.childNodes);
-    for(var i=0;i<nodes.length;i++){
-      if(nodes[i].nodeType===3&&nodes[i].textContent.trim()==='</>'){
-        body.removeChild(nodes[i]);
-      }
-    }
-  }catch(e){}
-})();
-
-/* ── 文字轮播引擎（Hero + 卡片通用）──
-   纯 CSS 类驱动：JS 只负责定时切换 .active 类名，所有视觉效果由 CSS 控制。
-   第一个 span 用 position:relative 撑开容器宽度，其余 absolute 覆盖。 */
-(function(){
-  function initRotator(el){
-    if(!el)return;
-    var items=[].slice.call(el.querySelectorAll('span'));
-    if(items.length<=1)return;
-    var cur=0;
-    setInterval(function(){
-      items[cur].classList.remove('active');
-      cur=(cur+1)%items.length;
-      items[cur].classList.add('active');
-    },3200);
-  }
-  if(document.getElementById('heroRotator'))initRotator(document.getElementById('heroRotator'));
-  document.querySelectorAll('.card-rot').forEach(initRotator);
-})();`;
-
-/* 左侧导航高亮脚本 —— 滚动时自动高亮当前章节 */
-const SIDEBAR_JS = `(function(){
-  var links=[].slice.call(document.querySelectorAll('.sidebar-link[href^="#"]'));
-  if(!links.length)return;
-  links.forEach(function(l){
-    l.addEventListener('click',function(e){
-      e.preventDefault();
-      var target=document.querySelector(this.getAttribute('href'));
-      if(target){target.scrollIntoView({behavior:'smooth',block:'start'});}
-      links.forEach(function(x){x.classList.remove('active');});
-      this.classList.add('active');
-    });
-  });
-  var obs=new IntersectionObserver(function(es){
-    es.forEach(function(e){
-      if(e.isIntersecting){
-        links.forEach(function(l){l.classList.remove('active');});
-        var a=document.querySelector('.sidebar-link[href="#'+e.target.id+'"]');
-        if(a)a.classList.add('active');
-      }
-    });},{rootMargin:'-100px 0px -60% 0px'});
-  links.forEach(function(l){
-    var el=document.querySelector(l.getAttribute('href'));
-    if(el)obs.observe(el);
-  });
-})();`;
-
-/* ── 公共部件 ── */
-
-function head(title: string): string {
-  return `<!doctype html>
-<html lang="zh-CN" data-theme="light">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>${title}</title>
-<link rel="icon" type="image/svg+xml" href="${LOGO_SVG.replace(/[\r\n]/g, '')}"/>
-<meta name="description" content="Neko GitHub App —— 自动标签、欢迎回复、陈旧清理、Release 通知、PR 检查、Webhook 中转，一个 App 全搞定。运行于 Cloudflare Workers，免费使用。"/>
-<style>${CSS}</style>
-</head>`;
-}
-
-function nav(active: 'home' | 'docs' | 'start' | 'privacy' | 'terms'): string {
-  return `<header class="nav">
-<div class="nav-inner">
-  <a class="brand" href="/">${LOGO_MINI}<span>Neko GitHub App</span></a>
-  <nav class="nav-links">
-    <a href="/" class="${active === 'home' ? 'active' : ''}">主页</a>
-    <a href="/docs"${active === 'docs' || active === 'start' ? ' class="active"' : ''}>文档</a>
-    <a href="/privacy"${active === 'privacy' ? ' class="active"' : ''}>隐私</a>
-    <a href="/terms"${active === 'terms' ? ' class="active"' : ''}>条款</a>
-    <button class="nav-btn" id="thBtn" aria-label="主题切换"><span class="ti">${ICONS.monitor}</span></button>
-  </nav>
-</div>
-</header>`;
-}
-
-function footer(): string {
-  return `<footer class="footer">
-<div class="wrap footer-inner">
-  <div class="footer-brand">${LOGO_MINI}<span>Neko GitHub App</span></div>
-  <div class="footer-links">
-    <a href="/">主页</a>
-    <a href="/docs">文档</a>
-    <a href="/privacy">隐私政策</a>
-    <a href="/terms">服务条款</a>
-  </div>
-</div>
-<div class="footer-copy">Cloudflare Workers &middot; 免费运行</div>
-</footer>`;
-}
-
 /* ══════════════════════════════════════
-   官网首页 —— 参考 astrbot.app
+   i18n 双语字典：默认 en（满足 GitHub 审核员），可切换 zh（方便国人）
+   长段落 HTML（文档内容页 / 隐私 / 条款）见下方 START_CONTENT / PRIVACY_HTML / TERMS_HTML
    ══════════════════════════════════════ */
-export function homepage(): string {
-  return `${head("Neko GitHub App")}
-<body>
-${nav('home')}
-<main class="wrap">
-  <section class="hero">
-    <div class="hero-badge animate-fadeUp">${ICONS.shield} Open Source GitHub Automation</div>
-    <h1 class="animate-fadeUp-d1">让 GitHub 仓库<br/><span class="hl"><span id="heroRotator" class="rotator"><span class="active">自己打理自己</span><span>自动运转起来</span><span>告别重复劳动</span><span>24 小时待命</span><span>零成本托管</span></span></span></h1>
-    <p class="animate-fadeUp-d2">自动标签、智能回复、陈旧清理、Release 通知、PR 体检、事件中转 —— 全部聚合到一个免费运行的 GitHub App。每个仓库独立配置，开箱即用。</p>
-    <div class="hero-actions animate-fadeUp-d3">
-      <a class="btn btn-primary" data-install href="#">${ICONS.download}<span>安装应用</span></a>
-      <a class="btn btn-outline" href="/docs">${ICONS.doc}<span>查看文档</span></a>
-    </div>
-  </section>
+type Lang = 'en' | 'zh';
+const I18N: Record<Lang, any> = {
+  en: {
+    meta: {
+      titleHome: 'Neko GitHub App',
+      desc: 'Automated labeling, welcome replies, stale cleanup, release notifications, PR checks, and webhook forwarding for your GitHub repositories. Runs free on Cloudflare Workers.',
+      titleDocs: 'Neko GitHub App · Docs',
+      titleStart: 'Neko GitHub App · Documentation',
+      titlePrivacy: 'Privacy Policy · Neko GitHub App',
+      titleTerms: 'Terms of Service · Neko GitHub App',
+    },
+    nav: { home: 'Home', docs: 'Docs', privacy: 'Privacy', terms: 'Terms', lang: 'Language' },
+    footer: { home: 'Home', docs: 'Docs', privacy: 'Privacy Policy', terms: 'Terms of Service', powered: 'Cloudflare Workers · Free to run' },
+    home: {
+      badge: 'Open Source GitHub Automation',
+      rotator: ['Self-managing', 'Runs automatically', 'No repetitive work', 'On duty 24/7', 'Zero-cost hosting'],
+      desc: 'Auto-labeling, smart replies, stale cleanup, release notifications, PR checks, and event forwarding — all bundled into one free GitHub App. Each repo is configured independently, ready to use out of the box.',
+      install: 'Install App',
+      viewDocs: 'View Docs',
+      featuresTitle: 'Core Features',
+      featuresSub: 'Six feature modules, each independently toggleable or customizable via the repository config file.',
+      cards: [
+        { t1: 'Auto Label', d1: 'Matches titles or bodies with regex and auto-applies labels like bug, feature, documentation to Issues / PRs.', t2: 'Smart Categorize', d2: 'Ships 5 built-in rules and supports fully custom regex. Existing labels are never added twice.' },
+        { t1: 'Auto Reply', d1: 'Sends a welcome message automatically when a new Issue or PR is created. Skips bot accounts to avoid noise.', t2: 'Custom Greeting', d2: 'Reply text is customizable in the config file, with multi-line text and variable placeholders supported.' },
+        { t1: 'Stale Cleanup', d1: 'Scans Issues with no activity for a long time, labels them stale and comments. Auto-removed when someone replies.', t2: 'Zero-cost Schedule', d2: 'Supports manual triggers or external free timers — periodic scanning without paid cron quotas.' },
+        { t1: 'Release Notify', d1: 'Pushes notifications to WeCom, Feishu, DingTalk, or any webhook channel when a new release is published.', t2: 'Multi-channel', d2: 'Pushes in parallel across channels; one failure does not affect the others. Any service that accepts JSON POST works.' },
+        { t1: 'PR Check', d1: 'Auto-comments on PRs about draft status, wrong target branch, or oversized diffs.', t2: 'Early Risk Detection', d2: 'Helps reviewers catch risks early and reduces post-merge rework and missed issues.' },
+        { t1: 'Webhook Forward', d1: 'Forwards GitHub events as-is to any external system, with optional signature verification.', t2: 'Event Bridge', d2: 'Great for connecting to self-hosted platforms or aggregation services, with event whitelist filtering.' },
+      ],
+      whyTitle: 'Why Choose It',
+      whySub: 'A lightweight automation solution built for individual developers and small teams.',
+      whyCards: [
+        { t: 'Free to Run', d: 'Deployed on Cloudflare Workers, the free tier is more than enough. No server to maintain, no ops.' },
+        { t: 'Config-driven', d: 'Each repo is controlled independently via a YAML config file. No config means everything on by default — zero learning curve.' },
+        { t: 'Secure & Controllable', d: 'Least-privilege: requests only the GitHub permissions it needs. All data flows between your repo and the Worker, with no third-party dependency.' },
+        { t: 'Full Documentation', d: 'Documentation covering feature descriptions, config fields, and notification formats. Ready to use, quick to troubleshoot.' },
+      ],
+    },
+    docs: {
+      badge: 'GitHub Automation',
+      h1a: 'Agentic GitHub assistant,',
+      h1b: 'for every repository',
+      sub: 'Auto-label / welcome reply / stale cleanup / release notify / PR check / event forward<br/>Config-driven · Free to run · Ready out of the box',
+      install: 'Install App',
+      start: 'Quick Start',
+      qsTitle: 'Quick Start',
+      qsCards: [
+        { t: 'Step 1: Install', d: 'Click the "Install App" button above to install Neko GitHub App to your GitHub organization or repository. Grant the required permissions to start.' },
+        { t: 'Step 2: Add config (optional)', d: 'Create <code>.github/neko-app.yml</code> in the target repo root to customize behavior. <strong>With no file, all features are on by default</strong> — zero learning curve.' },
+        { t: 'Step 3: Verify', d: 'Create an Issue with "bug" in the title — it should be auto-labeled <code>bug</code> and receive a welcome comment. Done!' },
+      ],
+      featTitle: 'Feature Overview',
+      featCards: [
+        { t: 'Auto Label', d: 'Regex matches title/body, auto-applies bug / feature / documentation labels' },
+        { t: 'Auto Reply', d: 'Auto welcome message on new Issue/PR, skips bots intelligently' },
+        { t: 'Stale Cleanup', d: 'Marks long-inactive Issues, auto-revives on reply' },
+        { t: 'Release Notify', d: 'Pushes to WeCom/Feishu/DingTalk/Webhook on new release' },
+        { t: 'PR Check', d: 'Auto-warns about draft/target-branch/diff-size issues' },
+        { t: 'Webhook Forward', d: 'Forwards events as-is to external systems, optional signature' },
+      ],
+      cta: 'Ready to dive deeper? Read the full documentation:',
+      fullDocs: 'Read Full Docs',
+    },
+    start: {
+      sidebar: [
+        { label: 'Introduction', links: [{ t: 'What is this', href: '#intro' }, { t: 'Important Links', href: '#links' }, { t: 'Quick Start', href: '#quickstart' }] },
+        { label: 'Configuration', links: [{ t: 'Config File', href: '#config' }, { t: 'Feature Details', href: '#features' }] },
+        { label: 'Integration', links: [{ t: 'Notification Format', href: '#notify' }, { t: 'Forward Format', href: '#forward' }] },
+        { label: 'Reference', links: [{ t: 'FAQ', href: '#faq' }] },
+      ],
+    },
+  },
+  zh: {
+    meta: {
+      titleHome: 'Neko GitHub App',
+      desc: '自动标签、智能回复、陈旧清理、Release 通知、PR 体检、事件中转，一个 App 全搞定。运行于 Cloudflare Workers，免费使用。',
+      titleDocs: 'Neko GitHub App · 文档',
+      titleStart: 'Neko GitHub App · 使用文档',
+      titlePrivacy: '隐私政策 · Neko GitHub App',
+      titleTerms: '服务条款 · Neko GitHub App',
+    },
+    nav: { home: '主页', docs: '文档', privacy: '隐私', terms: '条款', lang: '语言' },
+    footer: { home: '主页', docs: '文档', privacy: '隐私政策', terms: '服务条款', powered: 'Cloudflare Workers · 免费运行' },
+    home: {
+      badge: '开源 GitHub 自动化工具',
+      rotator: ['自己打理自己', '自动运转起来', '告别重复劳动', '24 小时待命', '零成本托管'],
+      desc: '自动标签、智能回复、陈旧清理、Release 通知、PR 体检、事件中转 —— 全部聚合到一个免费运行的 GitHub App。每个仓库独立配置，开箱即用。',
+      install: '安装应用',
+      viewDocs: '查看文档',
+      featuresTitle: '核心能力',
+      featuresSub: '六大功能模块，均可通过仓库配置文件单独开关或定制参数。',
+      cards: [
+        { t1: '自动打标签', d1: '按标题或正文正则匹配，自动给 Issue / PR 打上 bug、feature、documentation 等标签。', t2: '智能分类', d2: '内置 5 条默认规则，也支持完全自定义正则。已存在的标签不会重复添加。' },
+        { t1: '自动回复', d1: '新 Issue 或 PR 创建时自动发送欢迎语。智能跳过机器人账号，避免噪音。', t2: '欢迎语定制', d2: '回复内容可在配置文件中自定义，支持多行文本和变量占位符。' },
+        { t1: '陈旧清理', d1: '扫描长期无活动的 Issue 并标记 stale 标签加评论。有人回复时自动移除。', t2: '零成本定时', d2: '支持手动触发或外挂免费定时器，无需付费 cron 额度即可定期扫描。' },
+        { t1: 'Release 通知', d1: '新版本发布时自动推送通知到企业微信、飞书、钉钉或任意 Webhook 通道。', t2: '多通道并行', d2: '多通道并行推送，单个失败不影响其他。支持任意能接收 JSON POST 的服务。' },
+        { t1: 'PR 体检', d1: '在 PR 下自动提示草稿状态、目标分支异常、改动量过大等常见问题。', t2: '前置风险发现', d2: '帮助评审者前置发现风险，减少合并后的返工和问题遗漏。' },
+        { t1: 'Webhook 中转', d1: '把 GitHub 事件原样转发到任意外部系统，可选签名校验。', t2: '事件桥接', d2: '适合对接自建平台或聚合服务，支持事件白名单过滤。' },
+      ],
+      whyTitle: '为什么选择它',
+      whySub: '为个人开发者与小团队打造的轻量自动化方案。',
+      whyCards: [
+        { t: '免费运行', d: '部署在 Cloudflare Workers 上，免费额度内完全够用。无需自备服务器，无需运维。' },
+        { t: '配置驱动', d: '每个仓库通过 YAML 配置文件独立控制行为。不写配置则全部默认开启，零学习成本。' },
+        { t: '安全可控', d: '最小权限原则，只请求必要的 GitHub 权限。所有数据在你的仓库和 Worker 之间流转，无第三方依赖。' },
+        { t: '完整文档', d: '中文文档覆盖功能说明、配置字段、通知格式等。开箱即用，遇到问题快速定位。' },
+      ],
+    },
+    docs: {
+      badge: 'GitHub 自动化',
+      h1a: 'Agentic GitHub 助手，',
+      h1b: '服务每一个仓库',
+      sub: '自动标签 / 欢迎回复 / 陈旧清理 / Release 通知 / PR 体检 / 事件中转<br/>配置驱动 · 免费运行 · 开箱即用',
+      install: '安装应用',
+      start: '快速开始',
+      qsTitle: '快速开始',
+      qsCards: [
+        { t: '第一步：安装应用', d: '点击上方「安装应用」按钮，将 Neko GitHub App 安装到你的 GitHub 组织或仓库。授权所需权限后即可开始使用。' },
+        { t: '第二步：添加配置（可选）', d: '在目标仓库根目录创建 <code>.github/neko-app.yml</code>，按需定制行为。<strong>不创建则全部功能默认开启</strong>，零学习成本。' },
+        { t: '第三步：验证效果', d: '新建一个标题含 "bug" 的 Issue —— 应自动被打上 <code>bug</code> 标签并收到欢迎评论。搞定！' },
+      ],
+      featTitle: '功能一览',
+      featCards: [
+        { t: '自动打标签', d: '正则匹配标题/正文，自动打 bug / feature / documentation 等标签' },
+        { t: '自动回复', d: '新 Issue/PR 自动发送欢迎语，智能跳过机器人' },
+        { t: '陈旧清理', d: '标记长期无活动的 Issue，有人回复自动复活' },
+        { t: 'Release 通知', d: '新版本发布时推送到企业微信/飞书/钉钉/Webhook' },
+        { t: 'PR 体检', d: '自动提示草稿/目标分支/改动量等问题' },
+        { t: 'Webhook 中转', d: '事件原样转发到外部系统，可选签名校验' },
+      ],
+      cta: '准备好深入了解了？查看完整文档：',
+      fullDocs: '阅读完整文档',
+    },
+    start: {
+      sidebar: [
+        { label: '简介', links: [{ t: '这是什么', href: '#intro' }, { t: '重要链接', href: '#links' }, { t: '快速开始', href: '#quickstart' }] },
+        { label: '配置', links: [{ t: '配置文件', href: '#config' }, { t: '功能详解', href: '#features' }] },
+        { label: '集成', links: [{ t: '通知格式', href: '#notify' }, { t: '中转格式', href: '#forward' }] },
+        { label: '参考', links: [{ t: '常见问题', href: '#faq' }] },
+      ],
+    },
+  },
+};
 
-  <section id="features" class="section">
-    <h2 class="section-title">核心能力</h2>
-    <p class="section-sub">六大功能模块，均可通过仓库配置文件单独开关或定制参数。</p>
-    <div class="grid">
-      <!-- 卡片 1：自动打标签 -->
-      <div class="card animate-fadeUp"><div class="card-icon">${ICONS.tag}</div><div class="card-rot"><span class="active"><h3>自动打标签</h3><p>按标题或正文正则匹配，自动给 Issue / PR 打上 bug、feature、documentation 等标签。</p></span><span><h3>智能分类</h3><p>内置 5 条默认规则，也支持完全自定义正则。已存在的标签不会重复添加。</p></span></div></div>
-      <!-- 卡片 2：自动回复 -->
-      <div class="card animate-fadeUp"><div class="card-icon">${ICONS.chat}</div><div class="card-rot"><span class="active"><h3>自动回复</h3><p>新 Issue 或 PR 创建时自动发送欢迎语。智能跳过机器人账号，避免噪音。</p></span><span><h3>欢迎语定制</h3><p>回复内容可在配置文件中自定义，支持多行文本和变量占位符。</p></span></div></div>
-      <!-- 卡片 3：陈旧清理 -->
-      <div class="card animate-fadeUp"><div class="card-icon">${ICONS.clock}</div><div class="card-rot"><span class="active"><h3>陈旧清理</h3><p>扫描长期无活动的 Issue 并标记 stale 标签加评论。有人回复时自动移除。</p></span><span><h3>零成本定时</h3><p>支持手动触发或外挂免费定时器，无需付费 cron 额度即可定期扫描。</p></span></div></div>
-      <!-- 卡片 4：Release 通知 -->
-      <div class="card animate-fadeUp"><div class="card-icon">${ICONS.bell}</div><div class="card-rot"><span class="active"><h3>Release 通知</h3><p>新版本发布时自动推送通知到企业微信、飞书、钉钉或任意 Webhook 通道。</p></span><span><h3>多通道并行</h3><p>多通道并行推送，单个失败不影响其他。支持任意能接收 JSON POST 的服务。</p></span></div></div>
-      <!-- 卡片 5：PR 体检 -->
-      <div class="card animate-fadeUp"><div class="card-icon">${ICONS.check}</div><div class="card-rot"><span class="active"><h3>PR 体检</h3><p>在 PR 下自动提示草稿状态、目标分支异常、改动量过大等常见问题。</p></span><span><h3>前置风险发现</h3><p>帮助评审者前置发现风险，减少合并后的返工和问题遗漏。</p></span></div></div>
-      <!-- 卡片 6：Webhook 中转 -->
-      <div class="card animate-fadeUp"><div class="card-icon">${ICONS.forward}</div><div class="card-rot"><span class="active"><h3>Webhook 中转</h3><p>把 GitHub 事件原样转发到任意外部系统，可选签名校验。</p></span><span><h3>事件桥接</h3><p>适合对接自建平台或聚合服务，支持事件白名单过滤。</p></span></div></div>
-    </div>
-  </section>
-
-  <section class="section">
-    <h2 class="section-title">为什么选择它</h2>
-    <p class="section-sub">为个人开发者与小团队打造的轻量自动化方案。</p>
-    <div class="grid">
-      <div class="card"><div class="card-icon">${ICONS.rocket}</div><h3>免费运行</h3><p>部署在 Cloudflare Workers 上，免费额度内完全够用。无需自备服务器，无需运维。</p></div>
-      <div class="card"><div class="card-icon">${ICONS.gear}</div><h3>配置驱动</h3><p>每个仓库通过 YAML 配置文件独立控制行为。不写配置则全部默认开启，零学习成本。</p></div>
-      <div class="card"><div class="card-icon">${ICONS.shield}</div><h3>安全可控</h3><p>最小权限原则，只请求必要的 GitHub 权限。所有数据在你的仓库和 Worker 之间流转，无第三方依赖。</p></div>
-      <div class="card"><div class="card-icon">${ICONS.doc}</div><h3>完整文档</h3><p>中文文档覆盖功能说明、配置字段、通知格式等。开箱即用，遇到问题快速定位。</p></div>
-    </div>
-  </section>
-</main>
-${footer()}
-<script>${THEME_JS}</script>
-<script>${INSTALL_JS}</script>
-</body></html>`;
-}
-
-/* ══════════════════════════════════════
-   文档主页（GET /docs）
-   Hero + 徽章 + 快速开始卡片 + 安装按钮
-   参考 docs.astrbot.app 首页风格
-   ══════════════════════════════════════ */
-export function docsPage(): string {
-  return `${head("Neko GitHub App · 文档")}
-<body>
-${nav('docs')}
-<main class="wrap">
-  <section class="docs-hero">
-    <div class="docs-hero-badge animate-fadeUp">${ICONS.shield} GitHub Automation</div>
-    <h1 class="animate-fadeUp-d1">Agentic GitHub 助手，<br/>服务<span class="hl">每一个仓库</span></h1>
-    <p class="animate-fadeUp-d2">自动标签 / 欢迎回复 / 陈旧清理 / Release 通知 / PR 体检 / 事件中转<br/>配置驱动 · 免费运行 · 开箱即用</p>
-    <div class="hero-actions animate-fadeUp-d3">
-      <a class="btn btn-primary" data-install href="#">${ICONS.download}<span>安装应用</span></a>
-      <a class="btn btn-outline" href="/docs/start">${ICONS.doc}<span>快速开始</span></a>
-    </div>
-  </section>
-
-  <section class="section">
-    <h2 class="section-title">快速开始</h2>
-    <div class="grid">
-      <div class="card animate-fadeUp">
-        <div class="card-icon">${ICONS.download}</div>
-        <h3>第一步：安装应用</h3>
-        <p>点击上方「安装应用」按钮，将 Neko GitHub App 安装到你的 GitHub 组织或仓库。授权所需权限后即可开始使用。</p>
-      </div>
-      <div class="card animate-fadeUp">
-        <div class="card-icon">${ICONS.gear}</div>
-        <h3>第二步：添加配置（可选）</h3>
-        <p>在目标仓库根目录创建 <code>.github/neko-app.yml</code>，按需定制行为。<strong>不创建则全部功能默认开启</strong>，零学习成本。</p>
-      </div>
-      <div class="card animate-fadeUp">
-        <div class="card-icon">${ICONS.check}</div>
-        <h3>第三步：验证效果</h3>
-        <p>新建一个标题含 "bug" 的 Issue —— 应自动被打上 <code>bug</code> 标签并收到欢迎评论。搞定！</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <h2 class="section-title">功能一览</h2>
-    <div class="grid">
-      <div class="card"><div class="card-icon">${ICONS.tag}</div><h3>自动打标签</h3><p>正则匹配标题/正文，自动打 bug / feature / documentation 等标签</p></div>
-      <div class="card"><div class="card-icon">${ICONS.chat}</div><h3>自动回复</h3><p>新 Issue/PR 自动发送欢迎语，智能跳过机器人</p></div>
-      <div class="card"><div class="card-icon">${ICONS.clock}</div><h3>陈旧清理</h3><p>标记长期无活动的 Issue，有人回复自动复活</p></div>
-      <div class="card"><div class="card-icon">${ICONS.bell}</div><h3>Release 通知</h3><p>新版本发布时推送到企业微信/飞书/钉钉/Webhook</p></div>
-      <div class="card"><div class="card-icon">${ICONS.check}</div><h3>PR 体检</h3><p>自动提示草稿/目标分支/改动量等问题</p></div>
-      <div class="card"><div class="card-icon">${ICONS.forward}</div><h3>Webhook 中转</h3><p>事件原样转发到外部系统，可选签名校验</p></div>
-    </div>
-  </section>
-
-  <section class="section" style="text-align:center">
-    <p style="color:var(--muted);font-size:1rem;margin-bottom:18px">准备好深入了解了？查看完整文档：</p>
-    <a class="btn btn-primary" href="/docs/start">${ICONS.doc}<span>阅读完整文档</span></a>
-  </section>
-</main>
-${footer()}
-<script>${THEME_JS}</script>
-<script>${INSTALL_JS}</script>
-</body></html>`;
-}
-
-/* ══════════════════════════════════════
-   文档内容页（GET /docs/start）
-   左侧导航（可点击跳转）+ 中间内容区
-   删除右侧 TOC，删除发布指南和权限事件章节
-   只保留用户需要的内容 + FAQ + Marketplace 填写指南
-   ══════════════════════════════════════ */
-export function docsStartPage(): string {
-
-  /* 左侧导航（可点击跳转到对应章节） */
-  const sidebar = `
-<aside class="doc-sidebar">
-  <div class="sidebar-group">
-    <div class="sidebar-label">简介</div>
-    <a href="#intro" class="sidebar-link active">这是什么</a>
-    <a href="#links" class="sidebar-link">重要链接</a>
-    <a href="#quickstart" class="sidebar-link">快速开始</a>
-  </div>
-  <div class="sidebar-group">
-    <div class="sidebar-label">配置</div>
-    <a href="#config" class="sidebar-link">配置文件</a>
-    <a href="#features" class="sidebar-link">功能详解</a>
-  </div>
-  <div class="sidebar-group">
-    <div class="sidebar-label">集成</div>
-    <a href="#notify" class="sidebar-link">通知格式</a>
-    <a href="#forward" class="sidebar-link">中转格式</a>
-  </div>
-  <div class="sidebar-group">
-    <div class="sidebar-label">参考</div>
-    <a href="#marketplace" class="sidebar-link">Marketplace 发布</a>
-    <a href="#faq" class="sidebar-link">常见问题</a>
-  </div>
-</aside>`;
-
-  /* 主内容区 —— 删除了「权限与事件」章节，保留了 Marketplace 发布指南和 FAQ */
-  const content = `
+/* 文档内容页正文（中文版） */
+const START_CONTENT_ZH = `
 <article class="doc-content">
 <h1>使用文档</h1>
-<p class="doc-sub">从安装到配置到集成，一站式指南喵~</p>
+<p class="doc-sub">从安装到配置到集成，一站式配置指南。</p>
 
 <!-- 简介 -->
 <h2 id="intro">简介</h2>
@@ -600,13 +471,13 @@ Cloudflare Worker (Hono + Octokit)
 <h2 id="links">重要链接</h2>
 <div class="link-card">${ICONS.link}<div><div class="lc-t">官网</div><div class="lc-d"><a href="https://app.nekoaidev.top/" target="_blank" rel="noopener">https://app.nekoaidev.top/</a></div></div></div>
 <div class="link-card">${ICONS.doc}<div><div class="lc-t">本文档</div><div class="lc-d"><a href="https://app.nekoaidev.top/docs/start" target="_blank" rel="noopener">https://app.nekoaidev.top/docs/start</a></div></div></div>
-<div class="link-card">${ICONS.download}<div><div class="lc-t">安装地址</div><div class="lc-d"><a data-install href="#" onclick="event.preventDefault();window.open('https://github.com/apps/neko-github-app/installations/new','_blank')">点击一键跳转到 GitHub 安装页面</a></div></div></div>
+<div class="link-card">${ICONS.download}<div><div class="lc-t">安装地址</div><div class="lc-d"><a data-install href="#" onclick="event.preventDefault();window.open('https://github.com/apps/neko-github-app/installations/new','_blank')">点击跳转到 GitHub 安装页面</a></div></div></div>
 <div class="link-card">${ICONS.check}<div><div class="lc-t">健康检查</div><div class="lc-d"><a href="https://app.nekoaidev.top/health" target="_blank" rel="noopener">https://app.nekoaidev.top/health</a> &nbsp;返回 <code>{"ok":true}</code></div></div></div>
 
 <!-- 快速开始 -->
 <h2 id="quickstart">快速开始</h2>
 <ol>
-  <li><strong>安装 App</strong>：点击上方「安装地址」的一键跳转链接，或访问 <code>https://github.com/apps/neko-github-app/installations/new</code>，将 Neko GitHub App 安装到你的组织或仓库。</li>
+  <li><strong>安装 App</strong>：点击上方「安装地址」的跳转链接，或访问 <code>https://github.com/apps/neko-github-app/installations/new</code>，将 Neko GitHub App 安装到你的组织或仓库。</li>
   <li><strong>添加配置</strong>（可选）：在目标仓库根目录创建 <code>.github/neko-app.yml</code>，按需定制行为。不创建则全部功能默认开启。</li>
   <li><strong>测试验证</strong>：新建一个标题含 "bug" 的 Issue —— 应自动被打上 <code>bug</code> 标签并收到欢迎评论。</li>
   <li><strong>定制通知</strong>（可选）：在配置文件的 <code>releaseNotify.channels</code> 中填入你的 Webhook 地址，即可接收 Release 发布通知。</li>
@@ -760,130 +631,6 @@ forward:
   <li>若配置了 <code>forward.secret</code>，额外携带 <code>x-neko-signature</code> 头用于校验来源</li>
 </ul>
 
-<!-- Marketplace 发布指南 —— 截图三个红框必填项，必须写清楚 -->
-<h2 id="marketplace">GitHub Marketplace 发布指南</h2>
-<p>要将 App 发布到 GitHub Marketplace 并公开上架，需要在 App 设置页面完成以下三项必填内容（截图红框标注的部分）。以下是每项的<strong>可直接复制粘贴</strong>的填写模板：</p>
-
-<h3>1. 制定计划（Plan）⚠️ 必填</h3>
-<p>这一项要求你描述 App 的定价计划。由于本 App 完全免费，直接复制以下内容粘贴进去：</p>
-<pre><code># 计划名称
-Free
-
-# 定价
-$0 / 月（永久免费）
-
-# 描述
-Neko GitHub App 是一款完全免费的 GitHub 自动化工具。
-它运行于 Cloudflare Workers 免费额度内，用户无需支付任何费用。
-所有功能（自动标签、欢迎回复、陈旧清理、Release 通知、PR 检查、Webhook 中转）
-均包含在 Free 计划中，无任何限制或付费墙。
-
-# 试用
-无需试用期。安装即用，全部功能立即可用。
-
-# 付款方式
-无需绑定付款方式。Free 计划不产生任何费用。</code></pre>
-<div class="note"><strong>关键点</strong>：选 Free 计划类型，描述里明确说明免费原因（Cloudflare Workers 免费额度），不需要填写付款信息或试用期。</div>
-
-<h3>2. 安全和隐私信息（Security & Privacy）⚠️ 必填</h3>
-<p>这一项要求说明 App 如何处理用户数据和安全性。以下模板可直接复制粘贴：</p>
-<pre><code>## 数据收集声明
-Neko GitHub App 不主动收集、存储或传输任何用户个人数据（PII）。
-App 仅处理 GitHub 仓库元数据（Issue 标题、正文、标签名、PR 信息、Release 摘要），
-这些数据属于仓库层面的技术信息，不涉及用户个人身份信息。
-
-## 数据处理方式
-- App 通过 GitHub Webhook 接收事件 payload（Issue/PR/Release 元数据的 JSON）
-- 所有处理逻辑在 Cloudflare Worker 内存中完成，不落盘持久化用户数据
-- 不访问、不存储用户姓名、邮箱、IP 地址、地理位置等个人信息
-- 用户配置文件（.github/neko-app.yml）存储在用户自己的 GitHub 仓库中，
-  App 仅在每次事件触发时读取，不做持久化缓存
-
-## 第三方服务依赖
-- Cloudflare Workers（计算平台）：用于运行 App 代码，处理 Webhook 请求
-- GitHub API（通过 Octokit SDK）：用于读写 Issues/PR/Labels/Comments
-- 用户自行配置的通知通道 URL（可选）：仅转发 Release 摘要 JSON，
-  目标服务由用户自行选择和管理
-
-## 安全措施
-- Webhook 请求验证：通过 @octokit/webhooks-methods 库验证每个请求的
-  X-Hub-Signature-256 头（HMAC-SHA256），确保请求确实来自 GitHub
-- 密钥存储：App 私钥（PRIVATE_KEY）和 Webhook Secret（WEBHOOK_SECRET）
-  通过 Cloudflare Workers Secrets 加密存储，不以明文出现在代码或日志中
-- 最小权限原则：仅请求 Issues/Pull Requests 读写权限、
-  Contents/Metadata/Releases 只读权限，不多求任何额外权限
-- 无 Cookie / 无 Session / 无追踪：App 不使用 Cookie、不建立用户会话、
-  不嵌入任何第三方分析代码或追踪脚本
-- 无数据外传：除了用户显式配置的通知通道 URL 外，
-  App 不会将任何数据发送到第三方服务器
-
-## 合规声明
-- App 不处理 GDPR（通用数据保护条例）适用范围内的个人数据，
-  因为仅操作 GitHub 仓库的技术元数据（Issue 标题/正文/标签/PR 差异/Release 版本号），
-  这些不属于 PII（个人身份信息）
-- App 不处理 CCPA（加州消费者隐私法）定义的个人信息
-- 用户可通过卸载 App 或设置 enabled: false 立即停止数据处理
-- 如有数据安全问题反馈，请通过 GitHub App 页面联系维护者</code></pre>
-<div class="note"><strong>重点</strong>：审核最看重的是「是否收集个人数据」「密钥如何存储」「是否验证 Webhook 签名」「第三方服务有哪些」。以上模板已覆盖所有审核要点。</div>
-
-<h3>3. 建立 webhook（Setup webhook）⚠️ 必填</h3>
-<p>这一项要求说明 App 的 Webhook 端点已正确配置并能正常接收事件。直接复制：</p>
-<pre><code># Webhook URL（公网可达地址）
-https://app.nekoaidev.top/
-
-# Content Type
-application/json
-
-# Secret
-已在部署时通过 wrangler secret put WEBHOOK_SECRET 注入 Cloudflare Workers Secrets。
-请在下方填写你在 GitHub App 设置 → General → Webhook secret 中生成的那个 secret 值。
-（就是那一串以 == 结尾的 base64 字符串）
-
-# SSL/TLS
-是。Cloudflare 自动提供有效的 TLS 证书（Let's Encrypt 或 DigiCert）。
-App 强制使用 HTTPS，不支持明文 HTTP。
-
-# 验证方式
-App 使用 @octokit/webhooks-methods 库（GitHub 官方维护）验证每个入站请求：
-- 读取请求头 X-Hub-Signature-256
-- 用 WEBHOOK_SECRET 对原始请求体做 HMAC-SHA256 计算
-- 对比签名是否一致
-- 签名不匹配的请求直接返回 401，不做任何处理
-
-# 测试方法（证明 webhook 正常工作）
-方法 A —— 在线测试：
-1. 登录 GitHub → 进入你的 App 设置页面
-2. 找到 "Recent deliveries" 区域
-3. 点击最近一条投递记录查看详情
-4. 确认状态码为 200 或 201
-5. 可点击 "Redeliver" 按钮重发测试
-
-方法 B —— 实际操作测试：
-1. 将 App 安装到一个测试仓库
-2. 在该仓库新建一个 Issue（标题随便写）
-3. 观察 Issue 是否自动被打了标签 + 收到了欢迎评论
-4. 如果都有 → webhook 工作正常 ✓
-
-方法 C —— 健康检查端点：
-1. 浏览器打开 https://app.nekoaidev.top/health
-2. 应看到 {"ok":true,"ts":...} 的 JSON 响应
-3. 说明 Worker 在线且正常运行</code></pre>
-<div class="note"><strong>注意</strong>：「建立 webhook」实际上是在确认你的 Worker 能正常接收 GitHub 推送的事件。只要你的 Worker 已部署（<code>wrangler deploy</code> 成功）、App 已安装到某个仓库、且 Recent deliveries 里能看到 2xx 状态码，这一项就算满足。把上面内容粘贴进去即可。</div>
-
-<h3>发布前最终检查清单</h3>
-<p>三项必填都完成后，还需要确认以下几点才能提交审核：</p>
-<ul>
-  <li><strong>App 图标</strong>：上传一张 512x512 的 PNG 图标（建议用网站 logo 的变体，保持视觉一致）。</li>
-  <li><strong>简短描述</strong>（Summary，不超过 125 字符）：<br/><code>Automated issue labeling, welcome replies, stale cleanup, release notifications, PR checks, and webhook forwarding for GitHub repositories.</code></li>
-  <li><strong>详细描述</strong>（Description）：可复制官网 Hero 区域的文字。</li>
-  <li><strong>开源文件</strong>：勾选此项，填写仓库地址（仓库创建后补上 URL 即可）。</li>
-  <li><strong>隐私政策 URL</strong>：<code>https://app.nekoaidev.top/privacy</code>（本页已部署，可直接填）。</li>
-  <li><strong>服务条款 URL</strong>：<code>https://app.nekoaidev.top/terms</code>（本页已部署，可直接填）。</li>
-  <li><strong>勾选开发者政策确认</strong>：确认 App 符合 GitHub Marketplace 政策。</li>
-</ul>
-<p>全部完成后点击底部的<strong>「Draft / Submit for review」</strong>（草稿/提交审核）。GitHub 团队通常在 <strong>2-4 个工作日</strong>内完成审核。审核通过后 App 即在 GitHub Marketplace 公开展示。</p>
-<div class="note">如果审核被拒（常见原因：安全隐私信息不够详细），参照上方「安全和隐私信息」模板补充后重新提交即可。大部分被拒案例都是因为这一项写得不够具体。</div>
-
 <!-- FAQ -->
 <h2 id="faq">常见问题</h2>
 <ul>
@@ -899,9 +646,513 @@ App 使用 @octokit/webhooks-methods 库（GitHub 官方维护）验证每个入
 </ul>
 </article>`;
 
-  return `${head("Neko GitHub App · 使用文档")}
+/* 文档内容页正文（英文版） */
+const START_CONTENT_EN = `
+<article class="doc-content">
+<h1>Documentation</h1>
+<p class="doc-sub">One-stop setup guide from install to config to integration.</p>
+
+<!-- Introduction -->
+<h2 id="intro">Introduction</h2>
+<p><strong>Neko GitHub App</strong> is a GitHub App running on Cloudflare Workers. After you install it on your organization or repository, it receives GitHub events (Issues, PRs, Releases, etc.) via webhook and performs automation actions based on your configuration.</p>
+<pre><code>GitHub Events (Webhook)
+   │
+   ▼ HTTPS POST
+Cloudflare Worker (Hono + Octokit)
+   ├── Verify HMAC signature
+   ├── Read .github/neko-app.yml
+   ├── Route to feature modules
+   │   ├── autoLabel       Auto-labeling
+   │   ├── autoReply       Auto welcome reply
+   │   ├── stale           Stale issue cleanup
+   │   ├── releaseNotify   Release push notification
+   │   ├── prChecks        PR check hints
+   │   └── forward         Webhook forwarding
+   └── Return response</code></pre>
+<div class="note"><strong>100% Free</strong> — Runs within the Cloudflare Workers free tier, no server required. Each repository's behavior is controlled independently by its own config file and does not affect others.</div>
+
+<!-- Important Links -->
+<h2 id="links">Important Links</h2>
+<div class="link-card">${ICONS.link}<div><div class="lc-t">Official Site</div><div class="lc-d"><a href="https://app.nekoaidev.top/" target="_blank" rel="noopener">https://app.nekoaidev.top/</a></div></div></div>
+<div class="link-card">${ICONS.doc}<div><div class="lc-t">This Documentation</div><div class="lc-d"><a href="https://app.nekoaidev.top/docs/start" target="_blank" rel="noopener">https://app.nekoaidev.top/docs/start</a></div></div></div>
+<div class="link-card">${ICONS.download}<div><div class="lc-t">Install URL</div><div class="lc-d"><a data-install href="#" onclick="event.preventDefault();window.open('https://github.com/apps/neko-github-app/installations/new','_blank')">Open the GitHub installation page</a></div></div></div>
+<div class="link-card">${ICONS.check}<div><div class="lc-t">Health Check</div><div class="lc-d"><a href="https://app.nekoaidev.top/health" target="_blank" rel="noopener">https://app.nekoaidev.top/health</a> &nbsp;returns <code>{"ok":true}</code></div></div></div>
+
+<!-- Quick Start -->
+<h2 id="quickstart">Quick Start</h2>
+<ol>
+  <li><strong>Install the App</strong>: Click the "Install URL" link above, or visit <code>https://github.com/apps/neko-github-app/installations/new</code>, and install Neko GitHub App to your organization or repository.</li>
+  <li><strong>Add config</strong> (optional): Create <code>.github/neko-app.yml</code> in the target repo root to customize behavior. With no file, all features are on by default.</li>
+  <li><strong>Test</strong>: Create an Issue with "bug" in the title — it should be auto-labeled <code>bug</code> and receive a welcome comment.</li>
+  <li><strong>Custom notifications</strong> (optional): Fill your webhook URL into <code>releaseNotify.channels</code> in the config to receive release notifications.</li>
+</ol>
+
+<!-- Config File -->
+<h2 id="config">Configuration File</h2>
+<p>Create <code>.github/neko-app.yml</code> in each repo root to override defaults. <strong>With no config (or no file), all features use built-in defaults and are enabled.</strong></p>
+<table>
+  <thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>enabled</code></td><td>bool</td><td><code>true</code></td><td>Master switch. Set to <code>false</code> to skip all processing for this repo.</td></tr>
+    <tr><td><code>autoLabel.enabled</code></td><td>bool</td><td><code>true</code></td><td>Auto-labeling switch.</td></tr>
+    <tr><td><code>autoLabel.rules</code></td><td>list</td><td>5 built-in</td><td>List of matching rules; if provided it <b>completely replaces</b> the built-in rules. Each item has <code>label</code> / <code>match</code> (regex) / <code>field</code> (title|body|both).</td></tr>
+    <tr><td><code>autoReply.enabled</code></td><td>bool</td><td><code>true</code></td><td>Auto-reply switch.</td></tr>
+    <tr><td><code>autoReply.template</code></td><td>string</td><td>default greeting</td><td>Body text of the auto-reply, supports multi-line.</td></tr>
+    <tr><td><code>stale.enabled</code></td><td>bool</td><td><code>true</code></td><td>Stale cleanup switch.</td></tr>
+    <tr><td><code>stale.days</code></td><td>int</td><td><code>30</code></td><td>Days of inactivity before an issue is considered stale.</td></tr>
+    <tr><td><code>stale.label</code></td><td>string</td><td><code>stale</code></td><td>Label name to apply.</td></tr>
+    <tr><td><code>stale.message</code></td><td>string</td><td>default message</td><td>Comment text attached when labeling.</td></tr>
+    <tr><td><code>releaseNotify.enabled</code></td><td>bool</td><td><code>true</code></td><td>Release notification switch.</td></tr>
+    <tr><td><code>releaseNotify.channels</code></td><td>list</td><td><code>[]</code></td><td>Notification channel list, each <code>{ name, url }</code>; the target must accept JSON POST.</td></tr>
+    <tr><td><code>prChecks.enabled</code></td><td>bool</td><td><code>true</code></td><td>PR check switch.</td></tr>
+    <tr><td><code>forward</code></td><td>object|null</td><td><code>null</code></td><td>Webhook forward config; <code>null</code> means no forwarding. Contains <code>url</code> / <code>secret</code> (optional signing) / <code>events</code> (optional whitelist).</td></tr>
+  </tbody>
+</table>
+<p>Full example:</p>
+<pre><code>enabled: true
+
+autoLabel:
+  enabled: true
+  rules:
+    - label: "bug"
+      match: "bug|error|crash|exception"
+      field: both
+    - label: "enhancement"
+      match: "feature|enhancement"
+      field: both
+
+autoReply:
+  enabled: true
+  template: |
+    Thanks for your submission, we have received it and will handle it soon.
+
+stale:
+  enabled: true
+  days: 30
+  label: stale
+  message: "This issue has been inactive for 30 days and is marked stale. Comment if there is progress and we will remove the label."
+
+releaseNotify:
+  enabled: true
+  channels:
+    - name: "feishu-bot"
+      url: "https://open.feishu.cn/open-apis/bot/v2/hook/xxx"
+
+prChecks:
+  enabled: true
+
+forward:
+  url: "https://your-collector.example.com/github"
+  secret: "your-signing-secret"</code></pre>
+
+<!-- Feature Details -->
+<h2 id="features">Feature Details</h2>
+
+<h3>Auto Label (autoLabel)</h3>
+<ul>
+  <li><strong>Trigger</strong>: <code>issues</code> / <code>pull_request</code> <code>opened</code>, <code>edited</code>, <code>reopened</code>, <code>synchronize</code> events.</li>
+  <li>Regex matches the <code>title</code> / <code>body</code> / <code>both</code> field (case-insensitive); matched labels are added in batch, existing labels are never duplicated.</li>
+  <li>If <code>rules</code> is not configured, built-in default rules are used:
+    <table style="margin-top:8px">
+      <thead><tr><th>Label</th><th>Keywords</th></tr></thead>
+      <tbody>
+        <tr><td><code>bug</code></td><td>bug / error / crash / exception</td></tr>
+        <tr><td><code>enhancement</code></td><td>feature / enhancement</td></tr>
+        <tr><td><code>documentation</code></td><td>doc / readme</td></tr>
+        <tr><td><code>question</code></td><td>question / how / why</td></tr>
+        <tr><td><code>good first issue</code></td><td>good first / easy</td></tr>
+      </tbody>
+    </table>
+  </li>
+</ul>
+
+<h3>Auto Reply (autoReply)</h3>
+<ul>
+  <li><strong>Trigger</strong>: <code>issues</code> / <code>pull_request</code> <code>opened</code>.</li>
+  <li>If the author is a bot account (e.g. Dependabot, renovate), it is <strong>automatically skipped</strong>.</li>
+  <li>Reply text comes from <code>autoReply.template</code>, supports multi-line.</li>
+</ul>
+
+<h3>Stale Cleanup (stale)</h3>
+<ul>
+  <li><strong>Real-time part</strong> (works with no extra action): someone comments (non-bot) → auto-remove <code>stale</code> label (revive); Issue closed or reopened → auto-remove <code>stale</code> label.</li>
+  <li><strong>Batch scan part</strong>: requires manual trigger or an external timer:
+    <pre><code>curl -X POST https://app.nekoaidev.top/tasks/stale \\
+  -H "x-neko-task-key: &lt;YOUR_WEBHOOK_SECRET&gt;"</code></pre>
+    This scans all repos under the App's installations and labels open Issues inactive for more than <code>stale.days</code> days with a comment. You can attach it to a free timer (e.g. cron-job.org) for a daily scan.
+  </li>
+</ul>
+
+<h3>Release Notify (releaseNotify)</h3>
+<ul>
+  <li><strong>Trigger</strong>: <code>release</code> event with <code>action === "published"</code>.</li>
+  <li>Sends a JSON POST to each URL in <code>channels</code> (see format below). One channel failure does not affect others.</li>
+</ul>
+
+<h3>PR Check (prChecks)</h3>
+<ul>
+  <li><strong>Trigger</strong>: <code>pull_request</code> <code>opened</code>, <code>reopened</code>, <code>synchronize</code>.</li>
+  <li>Comments on the PR if any of these conditions are met:
+    <ul>
+      <li>PR is in Draft state</li>
+      <li>Target branch is not the repo default branch</li>
+      <li>Total diff (additions + deletions) exceeds 1000 lines</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>Webhook Forward (forward)</h3>
+<ul>
+  <li>Applies to all received events. No forwarding when <code>forward.url</code> is empty.</li>
+  <li>If <code>forward.events</code> whitelist is configured, only listed event types are forwarded.</li>
+  <li>If <code>forward.secret</code> is configured, the request carries an <code>x-neko-signature</code> header for the receiver to verify the source.</li>
+</ul>
+
+<!-- Notification Format -->
+<h2 id="notify">Notification Receiving Format</h2>
+<p>When a new Release is published, each URL in <code>releaseNotify.channels</code> receives a JSON POST like:</p>
+<pre><code>{
+  "title": "owner/name v1.2.3 released",
+  "body": "What's new in this release……",
+  "repo": "owner/name",
+  "url": "https://github.com/owner/name/releases/tag/v1.2.3",
+  "channel": "feishu-bot"
+}</code></pre>
+<p>Headers: <code>content-type: application/json</code>. Can point to a WeCom bot, Feishu group bot, DingTalk bot, or a self-hosted Worker service.</p>
+
+<!-- Forward Format -->
+<h2 id="forward">Webhook Forward Receiving Format</h2>
+<p>After <code>forward.url</code> is configured, the target receives:</p>
+<pre><code>{
+  "event": "issues",
+  "payload": { ... original GitHub webhook payload ... }
+}</code></pre>
+<p>Headers:</p>
+<ul>
+  <li><code>content-type: application/json</code></li>
+  <li><code>x-github-delivery</code>: GitHub event unique ID</li>
+  <li><code>x-github-event</code>: event name (e.g. <code>issues</code>)</li>
+  <li>If <code>forward.secret</code> is configured, also carries an <code>x-neko-signature</code> header for source verification</li>
+</ul>
+
+<!-- FAQ -->
+<h2 id="faq">FAQ</h2>
+<ul>
+  <li><strong>No reaction after install?</strong> Confirm you completed the authorized install on the target repo or org. Create an Issue with "bug" in the title to test — it should be auto-labeled <code>bug</code> and receive a welcome comment.</li>
+  <li><strong>Want to disable a feature?</strong> Set that feature's <code>enabled</code> to <code>false</code> in the repo's <code>.github/neko-app.yml</code>. Set top-level <code>enabled: false</code> to disable the whole App for that repo at once.</li>
+  <li><strong>Labels not applied as expected?</strong> Check the <code>field</code> in <code>autoLabel.rules</code> (<code>title</code> matches title only, <code>body</code> matches body only, <code>both</code> matches both); confirm your regex includes the keyword. Existing labels are never duplicated.</li>
+  <li><strong>No release notification received?</strong> Check whether the URL in <code>releaseNotify.channels</code> is publicly reachable and accepts JSON POST. In App settings → Recent deliveries, find the latest release event and click Redeliver to resend a test.</li>
+  <li><strong>Stale label not appearing?</strong> The batch scan needs a manual trigger (see the curl command in the stale section above). Auto-revive on comment/close is real-time and needs no extra action. Confirm <code>stale.enabled: true</code> and <code>stale.days</code> are as expected.</li>
+  <li><strong>Webhook forward not receiving data?</strong> Confirm <code>forward.url</code> is correct and publicly reachable; check whether <code>forward.events</code> whitelist includes the event types you want (empty = forward all events).</li>
+  <li><strong>How long until config changes take effect?</strong> The config file is read live on every event; changes take effect on the next trigger of the related feature, with no restart or reinstall needed.</li>
+  <li><strong>Marketplace review rejected?</strong> The most common reason is insufficient security/privacy detail. Make sure you explain: how data is processed, whether keys are stored encrypted, whether webhook signatures are verified, and what third-party services are used. Supplement per the template and resubmit.</li>
+  <li><strong>Is the free quota enough?</strong> The Cloudflare Workers free tier allows 100k requests/day, plenty for most repos. Even with dozens of repos and hundreds of events per day, you won't exceed the free quota.</li>
+</ul>
+</article>`;
+
+/* 主题切换脚本 */
+const THEME_JS = `(function(){
+  var b=document.getElementById('thBtn');
+  if(!b)return;
+  var order=['system','light','dark'];
+  var ic={system:'${ICONS.monitor}',light:'${ICONS.sun}',dark:'${ICONS.moon}'};
+  function set(t){
+    var d=t==='system'?(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):t;
+    document.documentElement.setAttribute('data-theme',d);
+    if(b&&b.querySelector('.ti')) b.querySelector('.ti').innerHTML=ic[t]||'';
+  }
+  var s=localStorage.getItem('neko-theme')||'system';set(s);
+  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',function(){if((localStorage.getItem('neko-theme')||'system')==='system') set('system');});
+  b.addEventListener('click',function(){var c=localStorage.getItem('neko-theme')||'system';var n=order[(order.indexOf(c)+1)%3];localStorage.setItem('neko-theme',n);set(n);});
+})();`;
+
+/* 安装链接自动生成脚本 —— 根据当前域名推断 App slug */
+const INSTALL_JS = `(function(){
+  var btns=document.querySelectorAll('[data-install]');
+  btns.forEach(function(el){
+    el.addEventListener('click',function(e){
+      e.preventDefault();
+      var slug='neko-github-app';
+      window.open('https://github.com/apps/'+slug+'/installations/new','_blank');
+    });
+  });
+})();
+/* ── 清除页面游离文字 </> （增强版：递归+持续监控）── */
+(function(){
+  function sweep(root){
+    if(!root)return;
+    var walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null,false);
+    var nodes=[],n;
+    while(n=walker.nextNode()){if(n.textContent.trim()==='</>')nodes.push(n);}
+    for(var i=0;i<nodes.length;i++){if(nodes[i].parentNode)nodes[i].parentNode.removeChild(nodes[i]);}
+  }
+  sweep(document.body);
+  var obs=new MutationObserver(function(){sweep(document.body);});
+  obs.observe(document.body||document.documentElement,{childList:true,subtree:true,characterData:true});
+})();
+
+/* ── 文字轮播引擎（Hero + 卡片通用）──
+   JS 完全控制显隐（display:none/block），CSS 只负责过渡动画。
+   初始化时立即隐藏所有非活跃项，确保不会出现"全部显示"的崩坏。 */
+(function(){
+  function initRotator(el){
+    if(!el)return;
+    var items=[].slice.call(el.querySelectorAll('span'));
+    if(items.length<=1){
+      /* 只有一项或不存在的，确保显示 */
+      items.forEach(function(it){it.style.display='block';it.style.opacity='1';it.style.position='relative';});
+      return;
+    }
+    var cur=0;
+    /* ★ 初始化：立即强制设置所有项的显隐状态 */
+    items.forEach(function(it,i){
+      if(i===0){
+        it.classList.add('active');
+        it.style.display='block';
+        it.style.opacity='1';
+        it.style.transform='translateY(0)';
+        it.style.position='relative';
+        it.style.left='auto';it.style.top='auto';it.style.width='auto';
+      }else{
+        it.classList.remove('active');
+        it.style.display='none';
+        it.style.opacity='0';
+      }
+    });
+    /* 定时切换 */
+    setInterval(function(){
+      var out=items[cur];
+      cur=(cur+1)%items.length;
+      var inn=items[cur];
+      /* 退出：淡出后隐藏 */
+      out.classList.remove('active');
+      out.style.opacity='0';
+      out.style.transform='translateY(-8px)';
+      setTimeout(function(){out.style.display='none';},400);
+      /* 进入：显示后淡入 */
+      inn.style.display='block';
+      inn.style.position='relative';
+      inn.style.left='auto';inn.style.top='auto';inn.style.width='auto';
+      /* 强制回流后开始动画 */
+      void inn.offsetWidth;
+      inn.classList.add('active');
+      inn.style.opacity='1';
+      inn.style.transform='translateY(0)';
+    },3200);
+  }
+  if(document.getElementById('heroRotator'))initRotator(document.getElementById('heroRotator'));
+  document.querySelectorAll('.card-rot').forEach(initRotator);
+})();`;
+
+/* 左侧导航高亮脚本 —— 滚动时自动高亮当前章节 */
+const SIDEBAR_JS = `(function(){
+  var links=[].slice.call(document.querySelectorAll('.sidebar-link[href^="#"]'));
+  if(!links.length)return;
+  links.forEach(function(l){
+    l.addEventListener('click',function(e){
+      e.preventDefault();
+      var target=document.querySelector(this.getAttribute('href'));
+      if(target){target.scrollIntoView({behavior:'smooth',block:'start'});}
+      links.forEach(function(x){x.classList.remove('active');});
+      this.classList.add('active');
+    });
+  });
+  var obs=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(l){l.classList.remove('active');});
+        var a=document.querySelector('.sidebar-link[href="#'+e.target.id+'"]');
+        if(a)a.classList.add('active');
+      }
+    });},{rootMargin:'-100px 0px -60% 0px'});
+  links.forEach(function(l){
+    var el=document.querySelector(l.getAttribute('href'));
+    if(el)obs.observe(el);
+  });
+})();`;
+
+/* ── 公共部件 ── */
+
+function head(title: string, lang: Lang = 'en'): string {
+  const desc = I18N[lang].meta.desc;
+  return `<!doctype html>
+<html lang="${lang === 'zh' ? 'zh-CN' : 'en'}">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${title}</title>
+<link rel="icon" type="image/svg+xml" href="${LOGO_SVG.replace(/[\r\n]/g, '')}"/>
+<meta name="description" content="${desc}"/>
+<style>${CSS}</style>
+</head>`;
+}
+
+function nav(active: 'home' | 'docs' | 'start' | 'privacy' | 'terms', lang: Lang = 'en'): string {
+  const t = I18N[lang].nav;
+  return `<header class="nav">
+<div class="nav-inner">
+  <a class="brand" href="/">${LOGO_MINI}<span>Neko GitHub App</span></a>
+  <nav class="nav-links">
+    <a href="/" class="${active === 'home' ? 'active' : ''}">${t.home}</a>
+    <a href="/docs"${active === 'docs' || active === 'start' ? ' class="active"' : ''}>${t.docs}</a>
+    <a href="/privacy"${active === 'privacy' ? ' class="active"' : ''}>${t.privacy}</a>
+    <a href="/terms"${active === 'terms' ? ' class="active"' : ''}>${t.terms}</a>
+    <div class="lang-switch" role="group" aria-label="${t.lang}">
+      <a href="?lang=en" class="${lang === 'en' ? 'active' : ''}">EN</a>
+      <a href="?lang=zh" class="${lang === 'zh' ? 'active' : ''}">中文</a>
+    </div>
+    <button class="nav-btn" id="thBtn" aria-label="主题切换"><span class="ti">${ICONS.monitor}</span></button>
+  </nav>
+</div>
+</header>`;
+}
+
+function footer(lang: Lang = 'en'): string {
+  const t = I18N[lang].footer;
+  return `<footer class="footer">
+<div class="wrap footer-inner">
+  <div class="footer-brand">${LOGO_MINI}<span>Neko GitHub App</span></div>
+  <div class="footer-links">
+    <a href="/">${t.home}</a>
+    <a href="/docs">${t.docs}</a>
+    <a href="/privacy">${t.privacy}</a>
+    <a href="/terms">${t.terms}</a>
+  </div>
+</div>
+<div class="footer-copy">${t.powered}</div>
+</footer>`;
+}
+
+/* ══════════════════════════════════════
+   官网首页 —— 参考 astrbot.app
+   ══════════════════════════════════════ */
+export function homepage(lang: Lang): string {
+  const s = I18N[lang].home;
+  const h1a = lang === 'zh' ? '让 GitHub 仓库' : 'Let your GitHub repos';
+  const cardIcons = [ICONS.tag, ICONS.chat, ICONS.clock, ICONS.bell, ICONS.check, ICONS.forward];
+  const featureCards = s.cards.map((c: any, i: number) =>
+    `<div class="card animate-fadeUp"><div class="card-icon">${cardIcons[i]}</div><div class="card-rot"><span class="active"><h3>${c.t1}</h3><p>${c.d1}</p></span><span><h3>${c.t2}</h3><p>${c.d2}</p></span></div></div>`
+  ).join('');
+  const whyIcons = [ICONS.rocket, ICONS.gear, ICONS.shield, ICONS.doc];
+  const whyCards = s.whyCards.map((c: any, i: number) =>
+    `<div class="card"><div class="card-icon">${whyIcons[i]}</div><h3>${c.t}</h3><p>${c.d}</p></div>`
+  ).join('');
+  const rotator = s.rotator.map((r: string, i: number) => `<span class="${i === 0 ? 'active' : ''}">${r}</span>`).join('');
+  return `${head(I18N[lang].meta.titleHome, lang)}
 <body>
-${nav('start')}
+${nav('home', lang)}
+<main class="wrap">
+  <section class="hero">
+    <div class="hero-badge animate-fadeUp">${ICONS.shield} ${s.badge}</div>
+    <h1 class="animate-fadeUp-d1">${h1a}<br/><span class="hl"><span id="heroRotator" class="rotator">${rotator}</span></span></h1>
+    <p class="animate-fadeUp-d2">${s.desc}</p>
+    <div class="hero-actions animate-fadeUp-d3">
+      <a class="btn btn-primary" data-install href="#">${ICONS.download}<span>${s.install}</span></a>
+      <a class="btn btn-outline" href="/docs">${ICONS.doc}<span>${s.viewDocs}</span></a>
+    </div>
+  </section>
+
+  <section id="features" class="section">
+    <h2 class="section-title">${s.featuresTitle}</h2>
+    <p class="section-sub">${s.featuresSub}</p>
+    <div class="grid">
+      ${featureCards}
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">${s.whyTitle}</h2>
+    <p class="section-sub">${s.whySub}</p>
+    <div class="grid">
+      ${whyCards}
+    </div>
+  </section>
+</main>
+${footer(lang)}
+<script>${THEME_JS}</script>
+<script>${INSTALL_JS}</script>
+</body></html>`;
+}
+
+/* ══════════════════════════════════════
+   文档主页（GET /docs）
+   Hero + 徽章 + 快速开始卡片 + 安装按钮
+   参考 docs.astrbot.app 首页风格
+   ══════════════════════════════════════ */
+export function docsPage(lang: Lang): string {
+  const s = I18N[lang].docs;
+  const h1mid = lang === 'zh' ? '服务' : 'for ';
+  const qsIcons = [ICONS.download, ICONS.gear, ICONS.check];
+  const qsCards = s.qsCards.map((c: any, i: number) =>
+    `<div class="card animate-fadeUp"><div class="card-icon">${qsIcons[i]}</div><h3>${c.t}</h3><p>${c.d}</p></div>`
+  ).join('');
+  const featIcons = [ICONS.tag, ICONS.chat, ICONS.clock, ICONS.bell, ICONS.check, ICONS.forward];
+  const featCards = s.featCards.map((c: any, i: number) =>
+    `<div class="card"><div class="card-icon">${featIcons[i]}</div><h3>${c.t}</h3><p>${c.d}</p></div>`
+  ).join('');
+  return `${head(I18N[lang].meta.titleDocs, lang)}
+<body>
+${nav('docs', lang)}
+<main class="wrap">
+  <section class="docs-hero">
+    <div class="docs-hero-badge animate-fadeUp">${ICONS.shield} ${s.badge}</div>
+    <h1 class="animate-fadeUp-d1">${s.h1a}<br/>${h1mid}<span class="hl">${s.h1b}</span></h1>
+    <p class="animate-fadeUp-d2">${s.sub}</p>
+    <div class="hero-actions animate-fadeUp-d3">
+      <a class="btn btn-primary" data-install href="#">${ICONS.download}<span>${s.install}</span></a>
+      <a class="btn btn-outline" href="/docs/start">${ICONS.doc}<span>${s.start}</span></a>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">${s.qsTitle}</h2>
+    <div class="grid">
+      ${qsCards}
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">${s.featTitle}</h2>
+    <div class="grid">
+      ${featCards}
+    </div>
+  </section>
+
+  <section class="section" style="text-align:center">
+    <p style="color:var(--muted);font-size:1rem;margin-bottom:18px">${s.cta}</p>
+    <a class="btn btn-primary" href="/docs/start">${ICONS.doc}<span>${s.fullDocs}</span></a>
+  </section>
+</main>
+${footer(lang)}
+<script>${THEME_JS}</script>
+<script>${INSTALL_JS}</script>
+</body></html>`;
+}
+
+/* ══════════════════════════════════════
+   文档内容页（GET /docs/start）
+   左侧导航（可点击跳转）+ 中间内容区
+   删除右侧 TOC，删除发布指南和权限事件章节
+   只保留用户需要的内容 + FAQ + Marketplace 填写指南
+   ══════════════════════════════════════ */
+export function docsStartPage(lang: Lang): string {
+
+  /* 左侧导航（可点击跳转到对应章节） */
+  const sidebar = `
+<aside class="doc-sidebar">
+${I18N[lang].start.sidebar.map((g: any, gi: number) => `
+  <div class="sidebar-group">
+    <div class="sidebar-label">${g.label}</div>
+${g.links.map((l: any, li: number) => `    <a href="${l.href}" class="sidebar-link${gi === 0 && li === 0 ? ' active' : ''}">${l.t}</a>`).join('\n')}
+  </div>`).join('\n')}
+</aside>`;
+
+  /* 主内容区 —— 删除了「权限与事件」章节，保留了 Marketplace 发布指南和 FAQ */
+  const content = lang === 'zh' ? START_CONTENT_ZH : START_CONTENT_EN;
+
+  return `${head(I18N[lang].meta.titleStart, lang)}
+<body>
+${nav('start', lang)}
 <main class="wrap">
   <!-- 两栏布局：左导航 | 内容（无右侧 TOC）-->
   <div class="doc-layout">
@@ -909,7 +1160,7 @@ ${nav('start')}
     ${content}
   </div>
 </main>
-${footer()}
+${footer(lang)}
 <script>${THEME_JS}</script>
 <script>${SIDEBAR_JS}</script>
 <script>${INSTALL_JS}</script>
@@ -920,11 +1171,7 @@ ${footer()}
    隐私政策（英文，符合 GitHub Marketplace 要求）
    GET /privacy
    ══════════════════════════════════════ */
-export function privacyPage(): string {
-  return `${head("Privacy Policy · Neko GitHub App")}
-<body>
-${nav('privacy')}
-<main class="wrap">
+const PRIVACY_CONTENT_EN = `
 <article class="doc-content" style="max-width:820px;margin:48px auto">
 <h1>Privacy Policy</h1>
 <p class="doc-sub">Last updated: August 16, 2026</p>
@@ -989,8 +1236,84 @@ ${nav('privacy')}
 <h2 id="contact">9. Contact</h2>
 <p>For privacy questions, reach us through the GitHub App page or the project repository issues.</p>
 </article>
+`;
+
+const PRIVACY_CONTENT_ZH = `
+<article class="doc-content" style="max-width:820px;margin:48px auto">
+<h1>隐私政策</h1>
+<p class="doc-sub">最后更新：2026 年 8 月 16 日</p>
+
+<h2 id="overview">1. 概述</h2>
+<p>Neko GitHub App（简称「本应用」「我们」）是一款免费、开源的 GitHub 应用，用于自动化处理仓库的常规任务，如 Issue 标签、欢迎回复、陈旧 Issue 清理、Release 通知、Pull Request 检查以及 Webhook 转发。本应用完全运行于 Cloudflare Workers，仅在您将应用安装到仓库时才会处理数据。</p>
+
+<h2 id="data">2. 我们处理的信息</h2>
+<p>本应用<strong>不会</strong>收集、存储或传输任何关于您或您用户的个人身份信息（PII）。</p>
+<p>本应用接触的唯一数据是 GitHub 通过 Webhook 推送的<strong>仓库技术元数据</strong>：</p>
+<ul>
+  <li>Issue 与 Pull Request 的标题、正文、标签、评论及状态；</li>
+  <li>Release 元数据（版本、名称、说明、作者）；</li>
+  <li>仓库名称以及各仓库的配置文件 <code>.github/neko-app.yml</code>。</li>
+</ul>
+<p>这些数据属于仓库且为技术性数据，并非个人数据。</p>
+
+<h2 id="processing">3. 我们如何处理数据</h2>
+<ul>
+  <li>GitHub 通过 HTTPS（Webhook）将事件载荷投递到我们的接口。</li>
+  <li>所有处理均在 Cloudflare Worker <strong>内存中</strong>完成。我们不会持久化、记录或存储任何载荷数据。数据在响应生成后立即丢弃。</li>
+  <li>本应用会在每次事件时读取各仓库的配置文件 <code>.github/neko-app.yml</code>，我们不会对其进行缓存或存储。</li>
+</ul>
+
+<h2 id="sharing">4. 数据共享与子处理方</h2>
+<ul>
+  <li>我们<strong>不会</strong>向第三方出售、出租或共享任何数据。</li>
+  <li>仅在<strong>您明确配置</strong>时，本应用才会发送数据：
+    <ul>
+      <li><code>releaseNotify.channels</code> —— Release 摘要以 JSON 形式 POST 到<em>您</em>提供的地址（例如您自己的聊天机器人 Webhook）。</li>
+      <li><code>forward.url</code> —— GitHub 事件载荷会被转发到<em>您</em>指定的地址。</li>
+    </ul>
+  </li>
+  <li>我们依赖的子处理方：
+    <ul>
+      <li><strong>Cloudflare Workers</strong> —— 执行应用代码并终结 TLS。</li>
+      <li><strong>GitHub API</strong>（通过 Octokit SDK）—— 在您授权范围内读写 Issue、Pull Request、标签与评论。</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="security">5. 安全</h2>
+<ul>
+  <li>每一个入站 Webhook 都会使用 HMAC-SHA256 对照 <code>X-Hub-Signature-256</code> 头进行校验。签名无效的请求将被拒绝（HTTP 401）。</li>
+  <li>密钥（应用私钥与 Webhook 密钥）通过 Cloudflare Workers Secrets 加密存储，绝不会出现在源码或日志中。</li>
+  <li>本应用仅申请运行所需的最小 GitHub 权限（Issues 与 Pull Requests 的读写；Metadata、Contents、Releases 的读取）。</li>
+  <li>本应用不使用 Cookie、不建立用户会话，也不嵌入任何第三方分析或跟踪脚本。</li>
+</ul>
+
+<h2 id="retention">6. 数据保留</h2>
+<p>我们不保留任何用户或仓库数据。由于处理是内存级、临时性的，请求完成后没有任何数据留存。</p>
+
+<h2 id="rights">7. 您的权利与选择</h2>
+<ul>
+  <li>您可以随时通过卸载应用或在 <code>.github/neko-app.yml</code> 中设置 <code>enabled: false</code> 来停止全部处理。</li>
+  <li>由于我们不存储个人数据，也就没有可供访问、更正或删除的个人数据。</li>
+</ul>
+
+<h2 id="compliance">8. 合规性</h2>
+<p>由于本应用仅处理仓库技术元数据，不涉及 GDPR 或 CCPA 所定义的个人数据。如果您认为涉及任何个人数据，请联系我们，我们会及时处理。</p>
+
+<h2 id="contact">9. 联系方式</h2>
+<p>如有隐私相关问题，可通过 GitHub 应用页面或项目仓库的 Issue 联系我们。</p>
+</article>
+`;
+
+export function privacyPage(lang: Lang): string {
+  const content = lang === 'zh' ? PRIVACY_CONTENT_ZH : PRIVACY_CONTENT_EN;
+  return `${head(I18N[lang].meta.titlePrivacy, lang)}
+<body>
+${nav('privacy', lang)}
+<main class="wrap">
+${content}
 </main>
-${footer()}
+${footer(lang)}
 <script>${THEME_JS}</script>
 </body></html>`;
 }
@@ -999,11 +1322,7 @@ ${footer()}
    服务条款（英文，符合 GitHub Marketplace 要求）
    GET /terms
    ══════════════════════════════════════ */
-export function termsPage(): string {
-  return `${head("Terms of Service · Neko GitHub App")}
-<body>
-${nav('terms')}
-<main class="wrap">
+const TERMS_CONTENT_EN = `
 <article class="doc-content" style="max-width:820px;margin:48px auto">
 <h1>Terms of Service</h1>
 <p class="doc-sub">Last updated: August 16, 2026</p>
@@ -1044,8 +1363,60 @@ ${nav('terms')}
 <h2 id="contact">10. Contact</h2>
 <p>Questions about these Terms can be directed to us through the GitHub App page or the project repository issues.</p>
 </article>
+`;
+
+const TERMS_CONTENT_ZH = `
+<article class="doc-content" style="max-width:820px;margin:48px auto">
+<h1>服务条款</h1>
+<p class="doc-sub">最后更新：2026 年 8 月 16 日</p>
+
+<h2 id="acceptance">1. 条款的接受</h2>
+<p>通过安装或使用 Neko GitHub App（简称「本服务」），即表示您同意受本服务条款约束。若您不同意，请勿安装或使用本服务。</p>
+
+<h2 id="description">2. 服务说明</h2>
+<p>本服务是一款免费的 GitHub 应用，对安装有它的仓库执行自动化操作，包括自动打标签、欢迎回复、陈旧 Issue 清理、Release 通知、Pull Request 检查以及 Webhook 转发。本服务运行于 Cloudflare Workers，不收取任何费用。</p>
+
+<h2 id="license">3. 使用许可</h2>
+<p>本服务免费提供。您对本服务的使用必须遵守 GitHub 服务条款及 GitHub 可接受使用政策。您需对安装有本服务的仓库内容负责。</p>
+
+<h2 id="acceptable">4. 可接受的使用</h2>
+<p>您同意不会：</p>
+<ul>
+  <li>将本服务用于任何非法目的；</li>
+  <li>试图滥用、过载、逆向工程或攻击本服务、Cloudflare 或 GitHub；</li>
+  <li>通过任何已配置的 Webhook 或通知通道发送垃圾信息、恶意软件或恶意内容；</li>
+  <li>冒充任何个人或实体，或虚假陈述您的关联关系。</li>
+</ul>
+
+<h2 id="warranty">5. 无担保</h2>
+<p>本服务按「现状」及「当前可用」提供，不附带任何明示或暗示的担保。我们不保证本服务不间断、及时、安全或无错误。</p>
+
+<h2 id="liability">6. 责任限制</h2>
+<p>在法律允许的最大范围内，对于因您使用本服务而引起的任何间接、偶然、特殊、后果性或惩罚性损害，或任何数据丢失，我们概不负责。</p>
+
+<h2 id="changes">7. 服务或条款的变更</h2>
+<p>我们可随时修改本服务或本条款。重大变更将通过上方的「最后更新」日期体现。变更后您继续使用本服务即视为接受新条款。</p>
+
+<h2 id="termination">8. 终止</h2>
+<p>您可随时通过在仓库中卸载应用来停止使用该服务。我们亦可出于任何原因（包括违反本条款）暂停或终止本服务。</p>
+
+<h2 id="law">9. 管辖法律</h2>
+<p>本条款受运营者所在司法辖区法律管辖，不适用其冲突法原则。</p>
+
+<h2 id="contact">10. 联系方式</h2>
+<p>有关本条款的问题，可通过 GitHub 应用页面或项目仓库的 Issue 联系我们。</p>
+</article>
+`;
+
+export function termsPage(lang: Lang): string {
+  const content = lang === 'zh' ? TERMS_CONTENT_ZH : TERMS_CONTENT_EN;
+  return `${head(I18N[lang].meta.titleTerms, lang)}
+<body>
+${nav('terms', lang)}
+<main class="wrap">
+${content}
 </main>
-${footer()}
+${footer(lang)}
 <script>${THEME_JS}</script>
 </body></html>`;
 }

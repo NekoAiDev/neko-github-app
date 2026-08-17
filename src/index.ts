@@ -7,20 +7,32 @@ import type { Env } from "./types";
 
 const app = new Hono<{ Bindings: Env }>();
 
-// 官网主站：app.nekoaidev.top/
-app.get("/", (c) => c.html(homepage()));
+// 解析语言：优先 ?lang= 查询参数（并写入 cookie 记住选择），其次 cookie，默认英文
+function getLang(c: any): "en" | "zh" {
+  const q = c.req.query("lang");
+  if (q === "zh" || q === "en") {
+    c.header("Set-Cookie", `lang=${q}; path=/; max-age=31536000; samesite=lax`);
+    return q;
+  }
+  const ck = c.req.header("cookie") || "";
+  if (ck.includes("lang=zh")) return "zh";
+  return "en";
+}
+
+// 官网主站：app.nekoaidev.top/ （默认英文，?lang=zh 切中文）
+app.get("/", (c) => c.html(homepage(getLang(c))));
 
 // 文档主页：app.nekoaidev.top/docs
-app.get("/docs", (c) => c.html(docsPage()));
+app.get("/docs", (c) => c.html(docsPage(getLang(c))));
 
 // 文档内容页：app.nekoaidev.top/docs/start
-app.get("/docs/start", (c) => c.html(docsStartPage()));
+app.get("/docs/start", (c) => c.html(docsStartPage(getLang(c))));
 
-// 隐私政策（英文，Marketplace 必填）
-app.get("/privacy", (c) => c.html(privacyPage()));
+// 隐私政策（默认英文，可切中文）
+app.get("/privacy", (c) => c.html(privacyPage(getLang(c))));
 
-// 服务条款（英文，Marketplace 必填）
-app.get("/terms", (c) => c.html(termsPage()));
+// 服务条款（默认英文，可切中文）
+app.get("/terms", (c) => c.html(termsPage(getLang(c))));
 
 app.get("/health", (c) => c.json({ ok: true, ts: Date.now() }));
 
