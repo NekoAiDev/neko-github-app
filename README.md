@@ -1,3 +1,5 @@
+[English](README.md) · [中文](README.zh-CN.md)
+
 # Neko GitHub App
 
 > A free, open-source GitHub App that automates your repositories, running entirely on Cloudflare Workers.

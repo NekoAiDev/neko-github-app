@@ -1,0 +1,128 @@
+[English](README.md) · 中文
+
+# Neko GitHub App（中文文档）
+
+> 一个免费、开源的 GitHub App，自动化你的仓库，完全运行在 Cloudflare Workers 上。
+
+**Neko GitHub App** 是一个基于 **Cloudflare Workers（免费额度）** 构建的 GitHub App。它将多个仓库自动化功能打包进一个 App，并可发布到 GitHub Marketplace。
+
+---
+
+## 功能特性
+
+| 功能 | 说明 |
+| --- | --- |
+| 自动标签 | 按标题/正文的规则匹配，自动给 Issue / PR 打标签（如 `bug`、`feature` 等） |
+| 自动回复 | 新建 Issue / PR 时自动发表欢迎评论（自动跳过机器人账号） |
+| 陈旧清理 | 对长时间无活动的 Issue 打上 `stale` 标签并评论 |
+| 发布通知 | 新版本发布时推送通知到你配置好的渠道（飞书 / 企业微信 / 钉钉 / Webhook） |
+| PR 检查 | 对草稿态、目标分支错误、改动过大的 PR 自动评论 |
+| Webhook 转发 | 将原始 GitHub 事件转发到任意外部系统 |
+
+所有功能均可通过仓库内的 `.github/neko-app.yml` 单独配置。不写配置则全部默认开启。
+
+---
+
+## 架构
+
+```
+GitHub ──webhook(HTTPS)──▶ Cloudflare Worker (Hono)
+                              ├─ 校验 HMAC 签名 (x-hub-signature-256)
+                              ├─ 读取 .github/neko-app.yml 配置
+                              ├─ 路由到功能模块 (auto-label / reply / stale / release / pr / forward)
+                              └─ (可选) 外部定时器每日扫描陈旧 Issue
+```
+
+- **运行环境**：Cloudflare Workers（免费额度对个人 / 小团队足够）
+- **框架**：Hono（轻量，对 Worker 支持一流）
+- **GitHub SDK**：Octokit + `@octokit/auth-app`（App JWT / 安装令牌）
+- **配置**：按仓库的 YAML，不配置则全部启用默认值
+
+---
+
+## 快速开始
+
+### 1. 创建 GitHub App
+- **方式 A（推荐）**：用本仓库的 `manifest.json` 作为模板，在 `https://github.com/settings/apps/new` 一键创建。
+- **方式 B**：手动在 `GitHub → Settings → Developer settings → GitHub Apps → New GitHub App` 创建（权限与事件参考 `manifest.json`）。
+
+记下 **App ID** 和生成的 **私钥（PEM）**，并设置一个 **Webhook secret**。
+
+### 2. 配置密钥
+```bash
+cd neko-github-app
+# 将 App ID 写入 wrangler.toml 的 [vars] APP_ID（或用 secret）
+wrangler secret put WEBHOOK_SECRET
+cat private-key.pem | wrangler secret put PRIVATE_KEY
+```
+
+### 3. 部署
+```bash
+npm install
+wrangler deploy
+```
+部署后会得到一个 `*.workers.dev` 地址（或绑定自己的域名，如 `app.nekoaidev.top`）。把它填到 GitHub App 的 **Webhook URL**。
+
+### 4. 安装
+在 App 设置页点击 **Install App**，选择要安装的组织 / 仓库。
+
+---
+
+## 仓库配置
+
+在仓库内创建 `.github/neko-app.yml`（完整示例见本仓库的 `.github/neko-app.yml`）：
+
+```yaml
+enabled: true
+autoLabel:
+  enabled: true
+  rules:
+    - label: "bug"
+      match: "bug|error|crash|exception"
+      field: both
+releaseNotify:
+  enabled: true
+  channels:
+    - name: "my-worker"
+      url: "https://your-notify.example.com/webhook"
+forward:
+  url: "https://another-system.example.com/github"
+  secret: "optional-signing-secret"
+  events: ["issues", "pull_request"]
+```
+
+不写配置时，所有功能使用内置默认值并全部开启。
+
+---
+
+## 发布到 GitHub Marketplace
+
+1. 在 App 设置中将 **Public** 设为 true，并填写名称、描述与图标。
+2. 使用一个稳定的公开 **Webhook URL**（建议绑定自定义域名）。
+3. 进入 `Developer settings → GitHub Apps → Your App → Marketplace` 提交，选择 **Free** 方案。
+
+---
+
+## 本地开发
+
+GitHub 无法向 `localhost` 推送 webhook，开发期间可用 [smee.io](https://smee.io) 做内网穿透：
+
+```bash
+npm install -g smee-client
+smee -u https://smee.io/your-channel -t http://localhost:8787/
+wrangler dev   # 在另一个终端运行
+```
+
+然后把 smee 转发地址设为 App 的 Webhook URL 用于本地调试。
+
+---
+
+## 完整文档
+
+完整使用文档：`https://app.nekoaidev.top/docs/start?lang=zh`（网站默认可切换中文 / English）。
+
+---
+
+## 许可证
+
+MIT © NekoAiDev

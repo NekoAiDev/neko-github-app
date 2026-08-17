@@ -1,3 +1,5 @@
+[English](SETUP.md) · [中文](SETUP.zh-CN.md)
+
 # Neko GitHub App — Create & Deploy Guide
 
 This guide is for creating the GitHub App manually on the GitHub website (the deploy/bot cannot click through the GitHub UI login for you, so this step is done by the repo owner). The whole process is free and requires no server.
