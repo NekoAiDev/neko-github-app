@@ -40,30 +40,7 @@ GitHub ──webhook(HTTPS)──▶ Cloudflare Worker (Hono)
 
 ---
 
-## 快速开始
-
-### 1. 创建 GitHub App
-- **方式 A（推荐）**：用本仓库的 `manifest.json` 作为模板，在 `https://github.com/settings/apps/new` 一键创建。
-- **方式 B**：手动在 `GitHub → Settings → Developer settings → GitHub Apps → New GitHub App` 创建（权限与事件参考 `manifest.json`）。
-
-记下 **App ID** 和生成的 **私钥（PEM）**，并设置一个 **Webhook secret**。
-
-### 2. 配置密钥
-```bash
-cd neko-github-app
-# 将 App ID 写入 wrangler.toml 的 [vars] APP_ID（或用 secret）
-wrangler secret put WEBHOOK_SECRET
-cat private-key.pem | wrangler secret put PRIVATE_KEY
-```
-
-### 3. 部署
-```bash
-npm install
-wrangler deploy
-```
-部署后会得到一个 `*.workers.dev` 地址（或绑定自己的域名，如 `app.nekoaidev.top`）。把它填到 GitHub App 的 **Webhook URL**。
-
-### 4. 安装
+## 安装 GitHub App
 在 App 设置页点击 **Install App**，选择要安装的组织 / 仓库。
 
 ---
@@ -92,28 +69,6 @@ forward:
 ```
 
 不写配置时，所有功能使用内置默认值并全部开启。
-
----
-
-## 发布到 GitHub Marketplace
-
-1. 在 App 设置中将 **Public** 设为 true，并填写名称、描述与图标。
-2. 使用一个稳定的公开 **Webhook URL**（建议绑定自定义域名）。
-3. 进入 `Developer settings → GitHub Apps → Your App → Marketplace` 提交，选择 **Free** 方案。
-
----
-
-## 本地开发
-
-GitHub 无法向 `localhost` 推送 webhook，开发期间可用 [smee.io](https://smee.io) 做内网穿透：
-
-```bash
-npm install -g smee-client
-smee -u https://smee.io/your-channel -t http://localhost:8787/
-wrangler dev   # 在另一个终端运行
-```
-
-然后把 smee 转发地址设为 App 的 Webhook URL 用于本地调试。
 
 ---
 
