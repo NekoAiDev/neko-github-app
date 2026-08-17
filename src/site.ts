@@ -87,6 +87,9 @@ pre code{background:none;padding:0;color:inherit;font-size:inherit}
 .rotator span.active,.card-rot span.active{
   display:block!important;opacity:1!important;transform:translateY(0)!important;pointer-events:auto!important;
 }
+/* 卡片轮播允许描述文字换行 */
+.card-rot{display:block;min-height:auto}
+.card-rot span{white-space:normal}
 
 /* ── 导航栏 ── */
 .nav{
@@ -144,12 +147,13 @@ pre code{background:none;padding:0;color:inherit;font-size:inherit}
 .card{
   background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);
   padding:26px 22px;transition:border-color .2s,box-shadow .2s,transform .2s;
+  overflow:hidden
 }
 .card:hover{border-color:var(--primary);box-shadow:var(--shadow-lg);transform:translateY(-3px)}
 .card-icon{width:44px;height:44px;border-radius:11px;display:grid;place-items:center;margin-bottom:16px;background:var(--primary-light);color:var(--primary)}
 .card-icon svg{width:22px;height:22px}
 .card h3{font-size:1.02rem;font-weight:700;margin-bottom:8px;color:var(--text)}
-.card p{font-size:.89rem;color:var(--muted);line-height:1.65}
+.card p{font-size:.89rem;color:var(--muted);line-height:1.65;overflow-wrap:break-word;word-break:break-word}
 
 /* ── 区块 ── */
 .section{padding:56px 0}
